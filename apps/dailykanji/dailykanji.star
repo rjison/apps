@@ -44,8 +44,6 @@ LEVEL_TO_JLPT = {
     "expert": 1,
 }
 
-# --- Helpers ---
-
 def get_allowed_kanji(max_jlpt_level):
     """
     Return all kanji for selected level and easier levels.
@@ -56,26 +54,31 @@ def get_allowed_kanji(max_jlpt_level):
             allowed.extend(kanji_list)
     return allowed
 
+
 def get_random_kanji(allowed_kanji, max_jlpt_level):
+    """
+    Get a pseudo-random kanji based on the date. This ensures the same
+    kanji is shown for the entire day for all users with the same settings,
+    which is ideal for caching.
+    """
     if not allowed_kanji:
         return "日"
 
     now = time.now()
-    # Build a simple date-based seed: YYYYMMDD + level
-    y = now.year()
-    m = now.month()
-    d = now.day()
+    y = now.year
+    m = now.month
+    d = now.day
     seed = y * 10000 + m * 100 + d + max_jlpt_level
 
-    # Lightweight integer hash (xorshift-style)
+    # Lightweight integer hash (xorshift-style) to create a pseudo-random number
     x = seed
-    x ^= (x << 13) & 0xFFFFFFFF
-    x ^= (x >> 17)
-    x ^= (x << 5) & 0xFFFFFFFF
+    x ^= x << 13
+    x ^= x >> 17
+    x ^= x << 5
 
-    idx = abs(x) % len(allowed_kanji)
+    # Use the hash to pick an index within the bounds of the allowed_kanji list
+    idx = x % len(allowed_kanji)
     return allowed_kanji[idx]
-
 
 def get_kanji_information(selected_kanji, api_key):
     """
@@ -98,17 +101,17 @@ def get_kanji_information(selected_kanji, api_key):
 def add_padding(element, left=0, top=0, right=0, bottom=0):
     return render.Padding(pad=(left, top, right, bottom), child=element)
 
-# --- Main App ---
-
 def main(config):
     SCREEN_WIDTH = canvas.width()
 
     if canvas.is2x():
-        FONT = "terminus-24"
-        FONT_HEIGHT = 20
+        FONT = "6x10-rounded"
+        FONT_HEIGHT = 10
+        V_SPACING = 1
     else:
-        FONT = "Dina_r400-6"
-        FONT_HEIGHT = 12
+        FONT = "5x8"
+        FONT_HEIGHT = 8
+        V_SPACING = 2
 
     api_key = config.str("api_key", "")
     selected_level = config.str("max_level", "beginner")
@@ -138,8 +141,9 @@ def main(config):
             kanji_data_obj = api_data
         else:
             # fallback
+            # On failure, fall back to the complete static sample data.
+            # This ensures the character, meaning, and readings are consistent.
             kanji_data_obj = json.decode(KANJI_SAMPLE_DATA)
-            kanji_data_obj["character"] = kanji_char
 
         # Create image
         kanji_image_url = KANJI_IMAGE_LOOKUP_URL + base64.encode(kanji_data_obj["character"])
@@ -150,14 +154,28 @@ def main(config):
         cache.set(cache_key_image, kanji_image_src, ttl_seconds=KANJI_TTL)
 
     # Prepare rows
-    row1 = kanji_data_obj.get("meaning", {}).get("english", "")
-    row2 = kanji_data_obj.get("onyomi", {}).get("romaji", "")
-    row3 = kanji_data_obj.get("kunyomi", {}).get("romaji", "")
-    if row2 == "n/a": row2 = ""
-    if row3 == "n/a": row3 = ""
+    meaning = kanji_data_obj.get("meaning", {}).get("english", "")
+    onyomi = kanji_data_obj.get("onyomi", {}).get("romaji", "")
+    kunyomi = kanji_data_obj.get("kunyomi", {}).get("romaji", "")
+
+    if meaning == "n/a":
+        meaning = ""
+    if onyomi == "n/a":
+        onyomi = ""
+    if kunyomi == "n/a":
+        kunyomi = ""
+
+    rows = [meaning, onyomi, kunyomi]
+
+    text_colors = ["#65d0e6", "#f4a306", "#e77c05"]
 
     display_items = []
     image_width = int(SCREEN_WIDTH + 1)
+
+    # Vertically center the text block
+    num_rows = len(rows)
+    total_text_height = (num_rows * FONT_HEIGHT) + ((num_rows - 1) * V_SPACING)
+    top_margin = (32 - total_text_height) // 2
 
     # Kanji image
     if canvas.is2x():
@@ -170,23 +188,18 @@ def main(config):
         ), -6, -13))
 
     # Meaning / On / Kun
-    display_items.append(add_padding(render.Marquee(
-        width=int(SCREEN_WIDTH / 2), child=render.Text(row1, color="#65d0e6", font=FONT)
-    ), int(SCREEN_WIDTH / 2), 0))
-    display_items.append(add_padding(render.Marquee(
-        width=int(SCREEN_WIDTH / 2), child=render.Text(row2, color="#f4a306", font=FONT)
-    ), int(SCREEN_WIDTH / 2), FONT_HEIGHT))
-    display_items.append(add_padding(render.Marquee(
-        width=int(SCREEN_WIDTH / 2), child=render.Text(row3, color="#e77c05", font=FONT)
-    ), int(SCREEN_WIDTH / 2), 2 * FONT_HEIGHT))
+    for i, row_text in enumerate(rows):
+        display_items.append(add_padding(
+            render.Marquee(width=int(SCREEN_WIDTH / 2), child=render.Text(row_text, color=text_colors[i], font=FONT)),
+            left=int(SCREEN_WIDTH / 2),
+            top=top_margin + i * (FONT_HEIGHT + V_SPACING),
+        ))
 
     return render.Root(
         render.Stack(children=display_items),
         show_full_animation=True,
         delay = int(config.get("scroll", 45)) // 2 if canvas.is2x() else int(config.get("scroll", 45))
     )
-
-# --- Schema ---
 
 def get_schema():
 
