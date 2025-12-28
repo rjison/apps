@@ -28,11 +28,11 @@ KANJI_TTL = 60 * 60 * 2  # 2 hours
 
 # Kanji grouped by JLPT level (expandable)
 KANJI_BY_LEVEL = {
-    5: ["国","日","事","人","一","見","本","子","出","年","大","言","学","分","中","記","会","新","月","時","力","気","上","下","私"],
-    4: ["朝","用","書","手","間","合","方","社","検","目","関","作","特","何","体","動","集","発","最","内","法","広","来","田","理","物","開"],
-    3: ["意","能","個","僕","通","面","回","代","利","経","使","車","編","同","平","音","読","少","食","道","世","結","真","考","公","野"],
-    2: ["信","多","更","活","選","題","屋","論","済","有","身","線","味","著","顔","売","空","続","第","様","海","始","校","英","勝"],
-    1: ["想","原","指","円","店","死","容","流","過","保","町","足","介","料","安","着","健","調","芸","違","研","古","参","番","館"]
+    5: ["国", "日", "事", "人", "一", "見", "本", "子", "出", "年", "大", "言", "学", "分", "中", "記", "会", "新", "月", "時", "力", "気", "上", "下", "私", "二", "三", "四", "五", "六", "七", "八", "九", "十"],
+    4: ["朝", "用", "書", "手", "間", "合", "方", "社", "検", "目", "関", "作", "特", "何", "体", "動", "集", "発", "最", "内", "法", "広", "来", "田", "理", "物", "開"],
+    3: ["意", "能", "個", "僕", "通", "面", "回", "代", "利", "経", "使", "車", "編", "同", "平", "音", "読", "少", "食", "道", "世", "結", "真", "考", "公", "野"],
+    2: ["信", "多", "更", "活", "選", "題", "屋", "論", "済", "有", "身", "線", "味", "著", "顔", "売", "空", "続", "第", "様", "海", "始", "校", "英", "勝"],
+    1: ["想", "原", "指", "円", "店", "死", "容", "流", "過", "保", "町", "足", "介", "料", "安", "着", "健", "調", "芸", "違", "研", "古", "参", "番", "館"],
 }
 
 # Map dropdown values to JLPT numbers
@@ -53,7 +53,6 @@ def get_allowed_kanji(max_jlpt_level):
         if level >= max_jlpt_level:
             allowed.extend(kanji_list)
     return allowed
-
 
 def get_random_kanji(allowed_kanji, max_jlpt_level):
     """
@@ -98,8 +97,8 @@ def get_kanji_information(selected_kanji, api_key):
         return None
     return data["kanji"]
 
-def add_padding(element, left=0, top=0, right=0, bottom=0):
-    return render.Padding(pad=(left, top, right, bottom), child=element)
+def add_padding(element, left = 0, top = 0, right = 0, bottom = 0):
+    return render.Padding(pad = (left, top, right, bottom), child = element)
 
 def main(config):
     SCREEN_WIDTH = canvas.width()
@@ -150,8 +149,8 @@ def main(config):
         kanji_image_src = http.get(kanji_image_url).body()
 
         # Cache results
-        cache.set(cache_key_data, json.encode(kanji_data_obj), ttl_seconds=KANJI_TTL)
-        cache.set(cache_key_image, kanji_image_src, ttl_seconds=KANJI_TTL)
+        cache.set(cache_key_data, json.encode(kanji_data_obj), ttl_seconds = KANJI_TTL)
+        cache.set(cache_key_image, kanji_image_src, ttl_seconds = KANJI_TTL)
 
     # Prepare rows
     meaning = kanji_data_obj.get("meaning", {}).get("english", "")
@@ -180,63 +179,66 @@ def main(config):
     # Kanji image
     if canvas.is2x():
         display_items.append(add_padding(render.Image(
-            height=image_width, width=image_width, src=kanji_image_src
+            height = image_width,
+            width = image_width,
+            src = kanji_image_src,
         ), -11, -27))
     else:
         display_items.append(add_padding(render.Image(
-            height=image_width, width=image_width, src=kanji_image_src
+            height = image_width,
+            width = image_width,
+            src = kanji_image_src,
         ), -6, -13))
 
     # Meaning / On / Kun
     for i, row_text in enumerate(rows):
         display_items.append(add_padding(
-            render.Marquee(width=int(SCREEN_WIDTH / 2), child=render.Text(row_text, color=text_colors[i], font=FONT)),
-            left=int(SCREEN_WIDTH / 2),
-            top=top_margin + i * (FONT_HEIGHT + V_SPACING),
+            render.Marquee(width = int(SCREEN_WIDTH / 2), child = render.Text(row_text, color = text_colors[i], font = FONT)),
+            left = int(SCREEN_WIDTH / 2),
+            top = top_margin + i * (FONT_HEIGHT + V_SPACING),
         ))
 
     return render.Root(
-        render.Stack(children=display_items),
-        show_full_animation=True,
-        delay = int(config.get("scroll", 45)) // 2 if canvas.is2x() else int(config.get("scroll", 45))
+        render.Stack(children = display_items),
+        show_full_animation = True,
+        delay = int(config.get("scroll", 45)) // 2 if canvas.is2x() else int(config.get("scroll", 45)),
     )
 
 def get_schema():
-
     scroll_speed_options = [schema.Option(display = d, value = v) for d, v in [("Slow Scroll", "60"), ("Medium Scroll", "45"), ("Fast Scroll", "30")]]
-    
+
     return schema.Schema(
-        version="1",
-        fields=[
+        version = "1",
+        fields = [
             schema.Text(
-                id="api_key",
-                name="API Key",
-                desc="RapidAPI key for KanjiAlive (optional)",
-                icon="code",
-                default="",
-                secret=True,
+                id = "api_key",
+                name = "API Key",
+                desc = "RapidAPI key for KanjiAlive (optional)",
+                icon = "code",
+                default = "",
+                secret = True,
             ),
             schema.Dropdown(
-                id="max_level",
-                name="Difficulty Level",
-                desc="Show kanji up to this difficulty",
-                icon="graduation-cap",
-                options=[
+                id = "max_level",
+                name = "Difficulty Level",
+                desc = "Show kanji up to this difficulty",
+                icon = "graduationCap",
+                options = [
                     schema.Option("Beginner", "beginner"),
                     schema.Option("Elementary", "elementary"),
                     schema.Option("Intermediate", "intermediate"),
                     schema.Option("Advanced", "advanced"),
                     schema.Option("Expert", "expert"),
                 ],
-                default="beginner",
+                default = "beginner",
             ),
             schema.Dropdown(
-                id="scroll",
-                name="Scroll Speed",
-                desc="Speed of the scrolling text",
-                icon="speedometer",
-                options=scroll_speed_options,
-                default="45",
+                id = "scroll",
+                name = "Scroll Speed",
+                desc = "Speed of the scrolling text",
+                icon = "scroll",
+                options = scroll_speed_options,
+                default = "45",
             ),
         ],
     )
