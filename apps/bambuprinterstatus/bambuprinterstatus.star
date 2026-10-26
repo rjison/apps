@@ -451,36 +451,10 @@ def get_schema():
                     ),
                 ],
             ),
-            schema.Text(
-                id = "notification_server_url",
-                name = "Tronbyt Server URL",
-                desc = (
-                    "OPTIONAL - Only Needed for Gen 2 with Sound Option. " +
-                    "Server URL reachable by Pixlet, including port. " +
-                    "Example: http://tronbyt.local:8000"
-                ),
-                icon = "link",
-                default = "",
-            ),
-            schema.Text(
-                id = "notification_device_id",
-                name = "Notification Device ID",
-                desc = (
-                    "OPTIONAL - Only Needed for Gen 2 with Sound Option. " +
-                    "Tronbyt device ID of the display that plays the sound."
-                ),
-                icon = "info",
-                default = "",
-            ),
-            schema.Text(
-                id = "notification_api_key",
-                name = "Notification API Key",
-                desc = (
-                    "OPTIONAL - Only Needed for Gen 2 with Sound Option. " +
-                    "Device API key from Tronbyt. Treat this value as a secret."
-                ),
-                icon = "lock",
-                default = "",
+            schema.Generated(
+                id = "audio_notification_settings",
+                source = "notification_sound",
+                handler = audio_notification_fields,
             ),
         ],
     )
